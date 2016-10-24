@@ -1,0 +1,205 @@
+---
+title: "Rapid AST"
+author: "Nicolas Blöchliger, Institute of Medical Microbiology, University of Zurich"
+date: "`r format(Sys.time(), '%d/%m/%Y')`"
+output:
+  pdf_document:
+    number_sections: true
+    toc: true
+---
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(gdata) # read.xls()
+library(ggplot2)
+library(reshape2)  # melt()
+library(scales)  # pretty_breaks()
+library(plyr)  # revalue()
+library(dplyr)
+library(RColorBrewer)
+library(printr)
+library(knitr)
+library(cowplot)
+library(pander)
+
+# cols <- c(1, brewer.pal(8, 'Set1'))[c(9, 1, 2, 5, 4, 6, 3, 8)]
+
+scale_colour_discrete <- function(...) scale_colour_brewer(..., palette="Set1")
+
+theme_set(theme_bw(base_size=8) + theme(panel.grid.major=element_line(size=0.25), plot.title=element_text(size=8, face="bold")))
+```
+
+```{r, echo=FALSE, warning=FALSE, cache=TRUE}
+dRaw <- read.csv("../../Data/Daten_für_Grafik_Version_2_3.csv", header=TRUE, sep=';', na.strings='')
+dRaw <- dRaw[!is.na(dRaw$diameter), ]
+
+dRaw$phenotypes <- substring(dRaw$phenotypes, 2)  # removes leading ";"
+dRaw$phenotypes[is.na(dRaw$phenotypes == "")] = 'NA'
+dRaw$phenotypes <- factor(dRaw$phenotypes)
+new <- sapply(strsplit(levels(dRaw$phenotypes), ';'), function(x) {if(length(x) > 1) {paste(x[-1], collapse='; ')} else {x}})
+names(new) = levels(dRaw$phenotypes)
+dRaw$phenotypes <- revalue(dRaw$phenotypes, new)
+
+dRaw$checkin <- factor(dRaw$checkin)
+
+dRaw$hDiscr <- factor(round(dRaw$h))
+```
+
+```{r, echo=FALSE, warning=FALSE, fig.height=7, results='asis'}
+myQ <- function(x) {
+  r <- quantile(x, probs = c(0, 0.1, 0.5, 0.9, 1))
+  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+  return(r)
+}
+
+myLineplot <- function(d) {
+  return(polishPlot(ggplot(d, aes(x=h, y=diameter, group=checkin, colour=isWt)) + geom_point() + geom_line() + scale_x_continuous(breaks=c(6, 8, 12, 18))))
+}
+
+myBoxplot <- function(d) {
+  return(polishPlot(ggplot(d, aes(x=hDiscr, y=diameter, colour=isWt)) + stat_summary(fun.data=myQ, geom='boxplot', position='dodge', aes(width=0.5))))
+  # return(polishPlot(ggplot(d, aes(x=hDiscr, y=diameter, colour=isWt)) + geom_boxplot(width=0.75)))
+}
+
+polishPlot <- function(plt) {
+  return(plt + xlab('time/h') + ylab('diam./mm') + guides(colour=FALSE) + coord_cartesian(ylim=c(6, 40)) + scale_colour_discrete(drop=FALSE))
+}
+
+myPlot <- function(d) {
+  return(myLineplot(d))
+}
+
+sp <- "Staphylococcus aureus"
+ab <- "CIP_5"
+
+importantSpecies <- c("Escherichia coli", "Klebsiella pneumoniae", "Enterobacter cloacae", "Staphylococcus epidermidis", "Staphylococcus aureus")
+
+for (ab in levels(dRaw$atb_acronim)) {
+  cat('\n\n\\pagebreak\n')
+  pandoc.header(paste(sep=', ', ab), 1)
+
+  d <- dRaw[dRaw$atb_acronim == ab, ]
+  
+  #############################################
+  # Summary figure for individual antibiotics #
+  #############################################
+  
+  dSummary <- d[d$organism %in% importantSpecies, ]
+  dSummary$organism <- factor(dSummary$organism, levels=importantSpecies)
+  # print(ggplot(dSummary, aes(x=h, y=diameter, group=checkin, colour=organism)) + geom_point() + geom_line() + facet_wrap(~ phenotypes) + theme(legend.position="top") + xlab('time/h') + ylab('diameter/mm') + scale_colour_discrete(drop=FALSE) + scale_x_continuous(breaks=c(6, 8, 12, 18)))  # lineplot
+  print(ggplot(dSummary, aes(x=hDiscr, y=diameter, colour=organism)) + stat_summary(fun.data=myQ, geom='boxplot', position='dodge', aes(width=0.75)) + facet_wrap(~ phenotypes) + theme(legend.position="top") + xlab('time/h') + ylab('diameter/mm') + scale_colour_discrete(drop=FALSE))  # boxplot
+  cat('\n\n')
+  
+  
+  smallEnterobacteriaceae <- setdiff(names(which(table(d$organism) < 80)), c("Staphylococcus aureus", "Staphylococcus aureus MRSA", "Staphylococcus epidermidis"))
+  repl = rep('other Enterobacteriaceae', length(smallEnterobacteriaceae))
+  names(repl) = smallEnterobacteriaceae
+  d$organism <- revalue(d$organism, replace=repl)
+  
+  for (sp in levels(d$organism)) {
+    dTmp <- d[d$organism == sp, ]
+    if (nrow(dTmp) == 0) {
+      next
+    }
+    
+    cat('\n\n\\pagebreak\n')
+    pandoc.header(paste(sep=', ', ab, sp), 2)
+    
+    dTmp$phenotypes <- factor(dTmp$phenotypes)
+    
+    wt <- levels(dTmp$phenotypes)[grep(" wild-type", levels(dTmp$phenotypes))]
+    if (length(wt) == 0) {
+      cat('\n\nNo data for wild type available.\n\n')
+      next
+    }
+    stopifnot(length(wt) == 1)
+    
+    allNonWt <- setdiff(levels(dTmp$phenotypes), wt)
+    if (length(allNonWt) == 0) {
+      cat('\n\nNo data for non-wild type available.\n\n')
+      next
+    }
+    dTmp$isWt <- factor(dTmp$phenotypes == wt)
+    
+    ###########################################################
+    # Lineplot requested by Michael Hombach and Marion Jetter #
+    ###########################################################
+    
+#     pltWt <- myPlot(dTmp[dTmp$phenotypes == wt, ])
+#     
+#     pltNonWt <- list()
+#     pltWtAndNonWt <- list()
+#     for (i in 1:(nlevels(dTmp$phenotypes) - 1)) {
+#       nonWt <- allNonWt[i]
+#       pltNonWt[[i]] <- myPlot(dTmp[dTmp$phenotypes == nonWt, ])
+#       pltWtAndNonWt[[i]] <- myPlot(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ])
+#     }
+#     
+#     pltNonWt[[nlevels(dTmp$phenotypes)]] <- myPlot(dTmp[dTmp$phenotypes %in% allNonWt, ])
+#     pltWtAndNonWt[[nlevels(dTmp$phenotypes)]] <- myPlot(dTmp)
+#     
+#     allPlots <- list()
+#     for (i in 1:(3 * nlevels(dTmp$phenotypes))) {
+#       if (i %% 3 == 1) {
+#         allPlots[[i]] = pltWt
+#       } else if (i %% 3 == 2) {
+#         allPlots[[i]] = pltNonWt[[i %/% 3 + 1]]
+#       } else if (i %% 3 == 0) {
+#         allPlots[[i]] = pltWtAndNonWt[[i %/% 3]]
+#       }
+#     }
+#     
+#     labels <- as.vector(t(array(c(paste0('(', letters[1:nlevels(dTmp$phenotypes)], ') ', c(allNonWt, 'all phenotypes combined')), rep('', 2 * nlevels(dTmp$phenotypes))), c(nlevels(dTmp$phenotypes), 3))))
+#     
+#     print(do.call("plot_grid", c(allPlots, ncol=3, labels=list(labels), label_size=6, hjust=0, vjust=0.8)))
+    
+    ############################################
+    # More accessible figure based on boxplots #
+    ############################################
+    
+    bxplt <- list()
+    for (i in 1:(nlevels(dTmp$phenotypes) - 1)) {
+      nonWt <- allNonWt[i]
+      bxplt[[i]] <- myBoxplot(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ]) + ggtitle(nonWt)
+    }
+    bxplt[[nlevels(dTmp$phenotypes)]] <- myBoxplot(dTmp) + ggtitle('all phenotypes combined')
+    
+    cat('\n\n')
+    print(do.call("plot_grid", c(bxplt)))
+    
+    #######################################
+    # Number of data points per phenotype #
+    #######################################
+    
+    cat('\n\n')
+    t <- table(dTmp$phenotypes) / 4
+    t <- data.frame(phenotype=levels(dTmp$phenotypes), count=as.vector(t))
+    print(kable(t, row.names=FALSE))
+    cat('\n\n\n\n')
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# for (sp in levels(dRaw$organism)) {
+#   for (ab in levels(dRaw$atb_acronim)) {
+#     dTmp <- dRaw[dRaw$organism == sp & dRaw$atb_acronim == ab, ]
+#     
+#     if(nrow(dTmp)) {
+#       print(ggplot(dTmp, aes(x=h, y=diameter, group=checkin, colour=phenotypes)) + geom_line() + geom_point() + xlab('time / h') + ylab('diameter / mm') + scale_x_continuous(breaks=c(6, 8, 12, 18)) + ggtitle(paste(sp, '-', ab)))
+#     }
+#   }
+# }
+```
+

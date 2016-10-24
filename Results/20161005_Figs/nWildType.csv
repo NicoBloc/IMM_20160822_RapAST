@@ -1,0 +1,211 @@
+"organism";"atb_acronim";"phenotypes";"count"
+"Citrobacter freundii";"AK_30";"AG wild-type";13
+"Citrobacter freundii";"CIP_5";"QL wild-type";10
+"Citrobacter freundii";"CN_10";"AG wild-type";13
+"Citrobacter freundii";"K_30";"AG wild-type";13
+"Citrobacter freundii";"LEV_5";"QL wild-type";10
+"Citrobacter freundii";"MH_30";"TET wild-type";15
+"Citrobacter freundii";"NA_30";"QL wild-type";10
+"Citrobacter freundii";"NOR_10";"QL wild-type";10
+"Citrobacter freundii";"TE_30";"TET wild-type";15
+"Citrobacter freundii";"TGC_15";"TET wild-type";15
+"Citrobacter freundii";"TOB_10";"AG wild-type";13
+"Citrobacter koseri";"AK_30";"AG wild-type";2
+"Citrobacter koseri";"CN_10";"AG wild-type";2
+"Citrobacter koseri";"K_30";"AG wild-type";2
+"Citrobacter koseri";"MH_30";"TET wild-type";3
+"Citrobacter koseri";"TE_30";"TET wild-type";3
+"Citrobacter koseri";"TGC_15";"TET wild-type";3
+"Citrobacter koseri";"TOB_10";"AG wild-type";2
+"Citrobacter spp";"AK_30";"AG wild-type";1
+"Citrobacter spp";"CN_10";"AG wild-type";1
+"Citrobacter spp";"K_30";"AG wild-type";1
+"Citrobacter spp";"MH_30";"TET wild-type";1
+"Citrobacter spp";"TE_30";"TET wild-type";1
+"Citrobacter spp";"TGC_15";"TET wild-type";1
+"Citrobacter spp";"TOB_10";"AG wild-type";1
+"Enterobacter aerogenes";"AK_30";"AG wild-type";14
+"Enterobacter aerogenes";"CIP_5";"QL wild-type";6
+"Enterobacter aerogenes";"CN_10";"AG wild-type";14
+"Enterobacter aerogenes";"K_30";"AG wild-type";14
+"Enterobacter aerogenes";"LEV_5";"QL wild-type";6
+"Enterobacter aerogenes";"MH_30";"TET wild-type";12
+"Enterobacter aerogenes";"NA_30";"QL wild-type";6
+"Enterobacter aerogenes";"NOR_10";"QL wild-type";6
+"Enterobacter aerogenes";"TE_30";"TET wild-type";12
+"Enterobacter aerogenes";"TGC_15";"TET wild-type";12
+"Enterobacter aerogenes";"TOB_10";"AG wild-type";14
+"Enterobacter cloacae";"AK_30";"AG wild-type";207
+"Enterobacter cloacae";"CIP_5";"QL wild-type";144
+"Enterobacter cloacae";"CN_10";"AG wild-type";207
+"Enterobacter cloacae";"K_30";"AG wild-type";207
+"Enterobacter cloacae";"LEV_5";"QL wild-type";144
+"Enterobacter cloacae";"MH_30";"TET wild-type";220
+"Enterobacter cloacae";"NA_30";"QL wild-type";144
+"Enterobacter cloacae";"NOR_10";"QL wild-type";144
+"Enterobacter cloacae";"SXT_25";"SXT wild-type";91
+"Enterobacter cloacae";"TE_30";"TET wild-type";220
+"Enterobacter cloacae";"TGC_15";"TET wild-type";220
+"Enterobacter cloacae";"TOB_10";"AG wild-type";207
+"Escherichia coli";"AK_30";"AG wild-type";249
+"Escherichia coli";"AMC_30";"BL wild-type";60
+"Escherichia coli";"AMP_10";"BL wild-type";60
+"Escherichia coli";"CIP_5";"QL wild-type";135
+"Escherichia coli";"CN_10";"AG wild-type";249
+"Escherichia coli";"CPD_10";"BL wild-type";60
+"Escherichia coli";"CRO_30";"BL wild-type";60
+"Escherichia coli";"CXM_30";"BL wild-type";60
+"Escherichia coli";"FEP_30";"BL wild-type";60
+"Escherichia coli";"FOX_30";"BL wild-type";60
+"Escherichia coli";"K_30";"AG wild-type";249
+"Escherichia coli";"LEV_5";"QL wild-type";135
+"Escherichia coli";"MEM_10";"BL wild-type";60
+"Escherichia coli";"MH_30";"TET wild-type";202
+"Escherichia coli";"NA_30";"QL wild-type";135
+"Escherichia coli";"NOR_10";"QL wild-type";135
+"Escherichia coli";"TE_30";"TET wild-type";202
+"Escherichia coli";"TEM_30";"BL wild-type";5
+"Escherichia coli";"TGC_15";"TET wild-type";202
+"Escherichia coli";"TOB_10";"AG wild-type";249
+"Escherichia coli";"TZP_36";"BL wild-type";60
+"Hafnia alvei";"AK_30";"AG wild-type";6
+"Hafnia alvei";"AMC_30";"BL wild-type";1
+"Hafnia alvei";"AMP_10";"BL wild-type";1
+"Hafnia alvei";"CIP_5";"QL wild-type";6
+"Hafnia alvei";"CN_10";"AG wild-type";6
+"Hafnia alvei";"CPD_10";"BL wild-type";1
+"Hafnia alvei";"CRO_30";"BL wild-type";1
+"Hafnia alvei";"CXM_30";"BL wild-type";1
+"Hafnia alvei";"FEP_30";"BL wild-type";1
+"Hafnia alvei";"FOX_30";"BL wild-type";1
+"Hafnia alvei";"K_30";"AG wild-type";6
+"Hafnia alvei";"LEV_5";"QL wild-type";6
+"Hafnia alvei";"MEM_10";"BL wild-type";1
+"Hafnia alvei";"MH_30";"TET wild-type";6
+"Hafnia alvei";"NA_30";"QL wild-type";6
+"Hafnia alvei";"NOR_10";"QL wild-type";6
+"Hafnia alvei";"TE_30";"TET wild-type";6
+"Hafnia alvei";"TEM_30";"BL wild-type";1
+"Hafnia alvei";"TGC_15";"TET wild-type";6
+"Hafnia alvei";"TOB_10";"AG wild-type";6
+"Hafnia alvei";"TZP_36";"BL wild-type";1
+"Klebsiella oxytoca";"AK_30";"AG wild-type";12
+"Klebsiella oxytoca";"CIP_5";"QL wild-type";11
+"Klebsiella oxytoca";"CN_10";"AG wild-type";12
+"Klebsiella oxytoca";"K_30";"AG wild-type";12
+"Klebsiella oxytoca";"LEV_5";"QL wild-type";11
+"Klebsiella oxytoca";"MH_30";"TET wild-type";12
+"Klebsiella oxytoca";"NA_30";"QL wild-type";11
+"Klebsiella oxytoca";"NOR_10";"QL wild-type";11
+"Klebsiella oxytoca";"TE_30";"TET wild-type";12
+"Klebsiella oxytoca";"TGC_15";"TET wild-type";12
+"Klebsiella oxytoca";"TOB_10";"AG wild-type";12
+"Klebsiella pneumoniae";"AK_30";"AG wild-type";244
+"Klebsiella pneumoniae";"AMC_30";"BL wild-type";4
+"Klebsiella pneumoniae";"AMP_10";"BL wild-type";4
+"Klebsiella pneumoniae";"CIP_5";"QL wild-type";119
+"Klebsiella pneumoniae";"CN_10";"AG wild-type";244
+"Klebsiella pneumoniae";"CPD_10";"BL wild-type";4
+"Klebsiella pneumoniae";"CRO_30";"BL wild-type";4
+"Klebsiella pneumoniae";"CXM_30";"BL wild-type";4
+"Klebsiella pneumoniae";"FEP_30";"BL wild-type";4
+"Klebsiella pneumoniae";"FOX_30";"BL wild-type";4
+"Klebsiella pneumoniae";"K_30";"AG wild-type";244
+"Klebsiella pneumoniae";"LEV_5";"QL wild-type";119
+"Klebsiella pneumoniae";"MEM_10";"BL wild-type";4
+"Klebsiella pneumoniae";"MH_30";"TET wild-type";222
+"Klebsiella pneumoniae";"NA_30";"QL wild-type";119
+"Klebsiella pneumoniae";"NOR_10";"QL wild-type";119
+"Klebsiella pneumoniae";"SXT_25";"SXT wild-type";79
+"Klebsiella pneumoniae";"TE_30";"TET wild-type";222
+"Klebsiella pneumoniae";"TEM_30";"BL wild-type";3
+"Klebsiella pneumoniae";"TGC_15";"TET wild-type";222
+"Klebsiella pneumoniae";"TOB_10";"AG wild-type";244
+"Klebsiella pneumoniae";"TZP_36";"BL wild-type";4
+"Morganella morganii";"AK_30";"AG wild-type";1
+"Morganella morganii";"CIP_5";"QL wild-type";1
+"Morganella morganii";"CN_10";"AG wild-type";1
+"Morganella morganii";"K_30";"AG wild-type";1
+"Morganella morganii";"LEV_5";"QL wild-type";1
+"Morganella morganii";"MH_30";"TET wild-type";1
+"Morganella morganii";"NA_30";"QL wild-type";1
+"Morganella morganii";"NOR_10";"QL wild-type";1
+"Morganella morganii";"TE_30";"TET wild-type";1
+"Morganella morganii";"TGC_15";"TET wild-type";1
+"Morganella morganii";"TOB_10";"AG wild-type";1
+"Pantoea spp";"AK_30";"AG wild-type";1
+"Pantoea spp";"CIP_5";"QL wild-type";1
+"Pantoea spp";"CN_10";"AG wild-type";1
+"Pantoea spp";"K_30";"AG wild-type";1
+"Pantoea spp";"LEV_5";"QL wild-type";1
+"Pantoea spp";"MH_30";"TET wild-type";1
+"Pantoea spp";"NA_30";"QL wild-type";1
+"Pantoea spp";"NOR_10";"QL wild-type";1
+"Pantoea spp";"TE_30";"TET wild-type";1
+"Pantoea spp";"TGC_15";"TET wild-type";1
+"Pantoea spp";"TOB_10";"AG wild-type";1
+"Salmonella group B";"AK_30";"AG wild-type";1
+"Salmonella group B";"CIP_5";"QL wild-type";1
+"Salmonella group B";"CN_10";"AG wild-type";1
+"Salmonella group B";"K_30";"AG wild-type";1
+"Salmonella group B";"LEV_5";"QL wild-type";1
+"Salmonella group B";"NA_30";"QL wild-type";1
+"Salmonella group B";"NOR_10";"QL wild-type";1
+"Salmonella group B";"TOB_10";"AG wild-type";1
+"Serratia marcescens";"AK_30";"AG wild-type";4
+"Serratia marcescens";"CIP_5";"QL wild-type";5
+"Serratia marcescens";"CN_10";"AG wild-type";4
+"Serratia marcescens";"K_30";"AG wild-type";4
+"Serratia marcescens";"LEV_5";"QL wild-type";5
+"Serratia marcescens";"MH_30";"TET wild-type";4
+"Serratia marcescens";"NA_30";"QL wild-type";5
+"Serratia marcescens";"NOR_10";"QL wild-type";5
+"Serratia marcescens";"TE_30";"TET wild-type";4
+"Serratia marcescens";"TGC_15";"TET wild-type";4
+"Serratia marcescens";"TOB_10";"AG wild-type";4
+"Staphylococcus aureus";"CIP_5";"QL wild-type";316
+"Staphylococcus aureus";"CN_10";"AG wild-type";335
+"Staphylococcus aureus";"DA_2";"MLS wild-type";75
+"Staphylococcus aureus";"E_15";"MLS wild-type";75
+"Staphylococcus aureus";"FD_10";"FA wild-type";349
+"Staphylococcus aureus";"FOX_30";"BL wild-type";157
+"Staphylococcus aureus";"K_30";"AG wild-type";335
+"Staphylococcus aureus";"LEV_5";"QL wild-type";316
+"Staphylococcus aureus";"LZD_10";"OXD wild-type";383
+"Staphylococcus aureus";"MH_30";"TET wild-type";348
+"Staphylococcus aureus";"NOR_10";"QL wild-type";316
+"Staphylococcus aureus";"P_1";"BL wild-type";157
+"Staphylococcus aureus";"RD_5";"RIF wild-type";325
+"Staphylococcus aureus";"SXT_25";"SXT wild-type";164
+"Staphylococcus aureus";"TE_30";"TET wild-type";348
+"Staphylococcus aureus";"TGC_15";"TET wild-type";348
+"Staphylococcus aureus";"TOB_10";"AG wild-type";335
+"Staphylococcus aureus MRSA";"CIP_5";"QL wild-type";10
+"Staphylococcus aureus MRSA";"CN_10";"AG wild-type";9
+"Staphylococcus aureus MRSA";"FD_10";"FA wild-type";21
+"Staphylococcus aureus MRSA";"K_30";"AG wild-type";9
+"Staphylococcus aureus MRSA";"LEV_5";"QL wild-type";10
+"Staphylococcus aureus MRSA";"LZD_10";"OXD wild-type";24
+"Staphylococcus aureus MRSA";"MH_30";"TET wild-type";18
+"Staphylococcus aureus MRSA";"NOR_10";"QL wild-type";10
+"Staphylococcus aureus MRSA";"RD_5";"RIF wild-type";20
+"Staphylococcus aureus MRSA";"TE_30";"TET wild-type";18
+"Staphylococcus aureus MRSA";"TGC_15";"TET wild-type";18
+"Staphylococcus aureus MRSA";"TOB_10";"AG wild-type";9
+"Staphylococcus epidermidis";"CIP_5";"QL wild-type";111
+"Staphylococcus epidermidis";"CN_10";"AG wild-type";112
+"Staphylococcus epidermidis";"DA_2";"MLS wild-type";55
+"Staphylococcus epidermidis";"E_15";"MLS wild-type";55
+"Staphylococcus epidermidis";"FD_10";"FA wild-type";144
+"Staphylococcus epidermidis";"FOX_30";"BL wild-type";34
+"Staphylococcus epidermidis";"K_30";"AG wild-type";112
+"Staphylococcus epidermidis";"LEV_5";"QL wild-type";111
+"Staphylococcus epidermidis";"LZD_10";"OXD wild-type";294
+"Staphylococcus epidermidis";"MH_30";"TET wild-type";232
+"Staphylococcus epidermidis";"NOR_10";"QL wild-type";111
+"Staphylococcus epidermidis";"P_1";"BL wild-type";34
+"Staphylococcus epidermidis";"RD_5";"RIF wild-type";141
+"Staphylococcus epidermidis";"SXT_25";"SXT wild-type";105
+"Staphylococcus epidermidis";"TE_30";"TET wild-type";232
+"Staphylococcus epidermidis";"TGC_15";"TET wild-type";232
+"Staphylococcus epidermidis";"TOB_10";"AG wild-type";112

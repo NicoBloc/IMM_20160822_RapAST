@@ -1,0 +1,43 @@
+---
+title: "Rapid AST"
+author: "Nicolas Blöchliger, Institute of Medical Microbiology, University of Zurich"
+date: "`r format(Sys.time(), '%d/%m/%Y')`"
+output: pdf_document
+---
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(gdata) # read.xls()
+library(ggplot2)
+library(reshape2)  # melt()
+library(scales)  # pretty_breaks()
+library(plyr)  # revalue()
+library(dplyr)
+library(RColorBrewer)
+library(printr)
+library(knitr)
+
+cols <- c(1, brewer.pal(8, 'Set1'))[c(9, 1, 2, 5, 4, 6, 3, 8)]
+```
+
+```{r, echo=FALSE, warning=FALSE, cache=TRUE}
+dRaw <- read.xls("../../Data/Daten_für_Grafiken_Alle_Keime.xlsx")
+dRaw$checkin <- factor(dRaw$checkin)
+dRaw$time <- dRaw$time / 60  # switch from minutes to hours
+```
+
+```{r, echo=FALSE, warning=FALSE, fig.height=4}
+sp <- "Staphylococcus aureus"
+ab <- "CIP_5"
+
+for (sp in levels(dRaw$organism)) {
+  for (ab in levels(dRaw$atb_acronim)) {
+    dTmp <- dRaw[dRaw$organism == sp & dRaw$atb_acronim == ab, ]
+    
+    if(nrow(dTmp)) {
+      print(ggplot(dTmp, aes(x=time, y=diameter, group=checkin, colour=phenotypes)) + geom_line() + geom_point() + xlab('time / h') + ylab('diameter / mm') + scale_x_continuous(breaks=c(6, 8, 12, 18)) + ggtitle(paste(sp, '-', ab)))
+    }
+  }
+}
+```
+
