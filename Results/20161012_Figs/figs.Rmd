@@ -108,7 +108,7 @@ polishPanel <- function(plt) {
 }
 
 polishPlot <- function(plt) {
-  plt + xlab('time/h') + ylab('diameter/mm') + coord_cartesian(ylim=c(6, 40)) + theme(legend.position="top")
+  plt + xlab('time / h') + ylab('diameter / mm') + coord_cartesian(ylim=c(6, 40)) + theme(legend.position="top", strip.text.x=element_text(face='bold'))
 }
 
 plotOverviewAntibiotic <- function(d, type="boxplot", groupRarePhenotypes=FALSE) {
@@ -138,6 +138,8 @@ plotOverviewAntibiotic <- function(d, type="boxplot", groupRarePhenotypes=FALSE)
 }
 ```
 
+
+
 ```{r readData, echo=FALSE, warning=FALSE, cache=TRUE}
 dRaw <- read.csv("../../Data/Daten_für Nico_rapid_AST_Paper_V5.csv", header=TRUE, sep=';', na.strings='') %>% gather('h', 'diameter', 4:7)
 dRaw <- dRaw[!is.na(dRaw$diameter), ]
@@ -159,13 +161,16 @@ dRaw$hDiscr <- factor(round(dRaw$h))
 dRaw <- droplevels(dRaw)
 ```
 
-```{r, echo=FALSE, warning=FALSE, fig.height=6.5, results='asis'}
+
+
+```{r, echo=FALSE, warning=FALSE, fig.height=5.5, results='asis'}
 showAllPlots <- FALSE
 groupRarePhenotypes <- FALSE
 
 dAUC <- data.frame()
 
 cat('\n\n\\pagebreak\n')
+
 for (ab in levels(dRaw$antibiotic)) {
   pandoc.header(paste(sep=', ', ab), 1)
 
@@ -175,10 +180,6 @@ for (ab in levels(dRaw$antibiotic)) {
     print(plotOverviewAntibiotic(d, groupRarePhenotypes=groupRarePhenotypes))  # Summary figure for individual antibiotics
     cat('\n\n\\pagebreak\n')
   }
-  
-  #########################################################
-  # Figure for individual antibiotic-species combinations #
-  #########################################################
   
   # Group Enterobacteriaceae with few data together:
   smallEnterobacteriaceae <- setdiff(names(which(table(d$organism) < 20 * 4)), c("Staphylococcus aureus", "Staphylococcus epidermidis"))
@@ -212,6 +213,8 @@ for (ab in levels(dRaw$antibiotic)) {
       }
     }
     
+    allNonWt <- setdiff(levels(dTmp$phenotypes), wt)
+    
     isWtLvls <- c("non-wild-type", "wild-type")
     dTmp$isWt <- factor(isWtLvls[(dTmp$phenotypes == wt) + 1], levels=isWtLvls)
     
@@ -220,22 +223,26 @@ for (ab in levels(dRaw$antibiotic)) {
     #######################################
     
     cat('\n\n\n\n')
-    dTmp %>% group_by(phenotypes) %>% summarise(n=n_distinct(checkin)) %>% kable %>% print
+    dTmp %>% group_by(phenotypes) %>% summarise(n=n_distinct(checkin)) %>% rename(phenotype=phenotypes) %>% kable %>% print
     cat('\n\n\n\n')
     
-    allNonWt <- setdiff(levels(dTmp$phenotypes), wt)
+    ##############
+    # Masterplot #
+    ##############
+    
     if (length(allNonWt) == 0) {
       addBoxplot(ggplot(dTmp, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE)) %>% polishPlot %>% print
       cat('\n\n\\pagebreak\n')
       next
     }
     
+    masterplot(dTmp) %>% print
     
-    ##############
-    # Masterplot #
-    ##############
+    ######################
+    # Caption / footnote #
+    ######################
     
-    print(masterplot(dTmp))
+    cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}.\n\n')
     
     ####################
     # Additional plots #
@@ -274,7 +281,7 @@ for (ab in levels(dRaw$antibiotic)) {
 
 # Area under the ROC curve
 
-```{r AUC, echo=FALSE, warning=FALSE, fig.height=8, results='asis'}
-ggplot(dAUC, aes(x=h, y=AUC, colour=organism)) + geom_line() + geom_point() + facet_wrap(~ antibiotic) + scale_x_continuous(breaks=c(6, 8, 12, 18), minor_breaks=NULL) + theme(legend.position="top")
+```{r AUC, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+ggplot(dAUC, aes(x=h, y=AUC, colour=organism)) + geom_line() + geom_point() + facet_wrap(~ antibiotic) + scale_x_continuous(breaks=c(6, 8, 12, 18), minor_breaks=NULL) + theme(legend.position="top", strip.text.x=element_text(face='bold'))
 ```
 
