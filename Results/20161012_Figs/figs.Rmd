@@ -29,7 +29,7 @@ library(pROC)
 scale_colour_discrete <- function(...) scale_colour_brewer(..., palette="Set1")
 scale_fill_discrete <- function(...) scale_fill_brewer(..., palette="Set1")
 
-theme_set(theme_bw(base_size=8) + theme(panel.grid.major=element_line(size=0.25), plot.title=element_text(size=8, face="bold")))
+theme_set(theme_bw(base_size=8) + theme(panel.grid.major=element_line(size=0.25), panel.grid.minor=element_blank(), plot.title=element_text(size=8, face="bold")))
 ```
 
 
@@ -46,15 +46,10 @@ addBoxplot <- function(plt) {
 }
 
 masterplot <- function(d) {
-  ptVec <- allNonWt
   # Duplicate wt-data, we use the "phenotypes" for facetting and "isWt" for filling:
   dTmpDupl <- d %>% select(phenotypes, hDiscr, diameter) %>% filter(phenotypes != wt) %>% mutate(isWt="non-wild-type")
-  if (nlevels(d$phenotypes) > 2) {
-    ptVec <- c("all non-wt combined", ptVec)
-    dTmpDupl <- rbind(dTmpDupl, dTmpDupl %>% mutate(phenotypes="all non-wt combined"))
-  }
   dTmpWt <- d %>% select(phenotypes, hDiscr, diameter) %>% filter(phenotypes == wt) %>% select(-phenotypes) %>% mutate(isWt="wild-type")
-  for (pt in ptVec) {
+  for (pt in allNonWt) {
     dTmpDupl <- rbind(dTmpDupl, data.frame(dTmpWt, phenotypes=pt))
   }
   
@@ -76,11 +71,8 @@ lineplotHombachMaster <- function(d) {
     pltWtAndNonWt[[i]] <- lineplotHombachPanel(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ])
   }
   
-  pltNonWt[[nlevels(dTmp$phenotypes)]] <- lineplotHombachPanel(dTmp[dTmp$phenotypes %in% allNonWt, ])
-  pltWtAndNonWt[[nlevels(dTmp$phenotypes)]] <- lineplotHombachPanel(dTmp)
-  
   allPlots <- list()
-  for (i in 1:(3 * nlevels(dTmp$phenotypes))) {
+  for (i in 1:(3 * (nlevels(dTmp$phenotypes) - 1))) {
     if (i %% 3 == 1) {
       allPlots[[i]] = pltWt
     } else if (i %% 3 == 2) {
@@ -150,9 +142,10 @@ dRaw$h <- as.numeric(gsub("[a-z.]", "", dRaw$h))
 dRaw$phenotypes <- substring(dRaw$phenotypes, 2)  # removes leading ";"
 # dRaw$phenotypes[is.na(dRaw$phenotypes == "")] = 'NA'
 dRaw$phenotypes <- factor(dRaw$phenotypes)
-new <- sapply(strsplit(levels(dRaw$phenotypes), ';'), function(x) {if(length(x) > 1) {paste(x[-1], collapse='; ')} else {x}})
-names(new) = levels(dRaw$phenotypes)
-dRaw$phenotypes <- revalue(dRaw$phenotypes, new)
+
+nPt <- max(lengths(strsplit(levels(dRaw$phenotypes), ';')))
+dRaw <- dRaw %>% separate(phenotypes, sep=";", into=paste0("phenotype", 1:3), fill="right") %>% gather("tmp", "phenotypes", 4:6, na.rm=TRUE) %>% select(-tmp)
+dRaw$phenotypes <- factor(dRaw$phenotypes)
 
 dRaw$checkin <- factor(dRaw$checkin)
 
@@ -232,6 +225,7 @@ for (ab in levels(dRaw$antibiotic)) {
     
     if (length(allNonWt) == 0) {
       addBoxplot(ggplot(dTmp, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE)) %>% polishPlot %>% print
+      cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}.\n\n')
       cat('\n\n\\pagebreak\n')
       next
     }
@@ -260,28 +254,12 @@ for (ab in levels(dRaw$antibiotic)) {
         nonWt <- allNonWt[i]
         bxplt[[i]] <- myBoxplot(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ]) + ggtitle(nonWt)
       }
-      bxplt[[nlevels(dTmp$phenotypes)]] <- myBoxplot(dTmp %>% mutate(phenotypes=isWt)) + ggtitle('all non-wt combined')
       cat('\n\n\\pagebreak\n')
       print(do.call("plot_grid", c(bxplt)))
-    }
-    
-    #######
-    # AUC #
-    #######
-    
-    for (hh in unique(dTmp$h)) {
-      idx <- dTmp$hDiscr == hh
-      dAUC <- rbind(dAUC, data.frame(organism=sp, antibiotic=ab, h=hh, AUC=auc(dTmp$isWt[idx], dTmp$diameter[idx])))
     }
     
     cat('\n\n\\pagebreak\n')
   }
 }
-```
-
-# Area under the ROC curve
-
-```{r AUC, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
-ggplot(dAUC, aes(x=h, y=AUC, colour=organism)) + geom_line() + geom_point() + facet_wrap(~ antibiotic) + scale_x_continuous(breaks=c(6, 8, 12, 18), minor_breaks=NULL) + theme(legend.position="top", strip.text.x=element_text(face='bold'))
 ```
 
