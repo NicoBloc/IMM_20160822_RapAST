@@ -1,6 +1,6 @@
 ---
-title: "Rapid AST"
-author: "Nicolas Blöchliger, Institute of Medical Microbiology, University of Zurich"
+title: "Supplemental Figure 1: Development of zone diameters of wild-type and non-wild-type populations over time"
+author: "Marion Jetter, Nicolas Blöchliger, Michael Hombach*\\newline Institute of Medical Microbiology, University of Zurich, Gloriastrasse 30/32, 8006 Zürich, Switzerland"
 date: "`r format(Sys.time(), '%d/%m/%Y')`"
 output:
   pdf_document:
@@ -29,7 +29,7 @@ library(pROC)
 scale_colour_discrete <- function(...) scale_colour_brewer(..., palette="Set1")
 scale_fill_discrete <- function(...) scale_fill_brewer(..., palette="Set1")
 
-theme_set(theme_bw(base_size=8) + theme(panel.grid.major=element_line(size=0.25), panel.grid.minor=element_blank(), plot.title=element_text(size=8, face="bold")))
+theme_set(theme_bw(base_size=10) + theme(panel.grid.major=element_line(size=0.25), panel.grid.minor=element_blank(), plot.title=element_text(size=10, face="bold")))
 ```
 
 
@@ -186,7 +186,7 @@ for (ab in levels(dRaw$antibiotic)) {
       next
     }
     
-    pandoc.header(paste(sep=', ', ab, sp), 2)
+    pandoc.header(paste0(ab, ", *", sp, "*"), 2)
     
     dTmp$phenotypes <- factor(dTmp$phenotypes)
     wt <- levels(dTmp$phenotypes)[c(grep(" wild-type", levels(dTmp$phenotypes)), which("Wild-type" == levels(dTmp$phenotypes)), which("wild-type" == levels(dTmp$phenotypes)), which("Wild type" == levels(dTmp$phenotypes)), which("wild type" == levels(dTmp$phenotypes)))]
@@ -236,7 +236,7 @@ for (ab in levels(dRaw$antibiotic)) {
     # Caption / footnote #
     ######################
     
-    cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}.\n\n')
+    cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}. Boxes range from the 5th to the 95th percentiles, whiskers cover the whole range of the data, and thick lines indicate medians.\n\n')
     
     ####################
     # Additional plots #
