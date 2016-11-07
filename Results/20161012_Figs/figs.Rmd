@@ -133,7 +133,7 @@ plotOverviewAntibiotic <- function(d, type="boxplot", groupRarePhenotypes=FALSE)
 
 
 ```{r readData, echo=FALSE, warning=FALSE, cache=TRUE}
-dRaw <- read.csv("../../Data/Daten_für Nico_rapid_AST_Paper_V5.csv", header=TRUE, sep=';', na.strings='') %>% gather('h', 'diameter', 4:7)
+dRaw <- read.csv("../../Data/Daten_für Nico_rapid_AST_Paper_V6.csv", header=TRUE, sep=';', na.strings='') %>% gather('h', 'diameter', 4:7)
 dRaw <- dRaw[!is.na(dRaw$diameter), ]
 dRaw <- dRaw[!is.na(dRaw$phenotypes), ]
 
