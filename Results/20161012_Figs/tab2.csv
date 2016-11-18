@@ -1,0 +1,28 @@
+"antibiotic";"E. cloacae";"E. coli";"K. pneumoniae";"S. aureus";"S. epidermidis"
+"Amoxicillin clavulanate";NA;"3";"2";NA;NA
+"Ampicillin";NA;"2";NA;NA;NA
+"Cefepime";"3";"3";"3";NA;NA
+"Cefoxitin";NA;"3";"2";"3";"3"
+"Cefpodoxime";"2";"2";"2";NA;NA
+"Ceftriaxone";"3";"3";"3";NA;NA
+"Cefuroxime";"3";"2";"2";NA;NA
+"Ciprofloxacin";"3";"3";"3";"3";"3"
+"Clindamycin";NA;NA;NA;"3";"3"
+"Erythromycin";NA;NA;NA;"3";"3"
+"Fusidic acid";NA;NA;NA;"3";"3"
+"Gentamicin";"2";"2";"2";"3";"3"
+"Kanamycine";NA;NA;NA;"3";"3"
+"Levofloxacin";"3";"3";"2";"3";"3"
+"Linezolid";NA;NA;NA;"3";"3"
+"Meropenem";"2";"3";"3";NA;NA
+"Minocycline";NA;NA;NA;"3";"3"
+"Naladixic acid";"2";"2";"2";NA;NA
+"Norfloxacin";"3";"3";"3";"3";"3"
+"Penicillin";NA;NA;NA;"3";"3"
+"Piperacillin/Tazobactam";"3";"3";"2";NA;NA
+"Rifampicin";NA;NA;NA;"3";"3"
+"Sulfameth./Trimethoprim";"1";"1";"1";"3";"3"
+"Temocillin";"2";"2";"2";NA;NA
+"Tetracycline";NA;NA;NA;"3";"3"
+"Tigecycline";"2";"2";"2";"3";"3"
+"Tobramycin";"2";"2";"2";"3";"3"

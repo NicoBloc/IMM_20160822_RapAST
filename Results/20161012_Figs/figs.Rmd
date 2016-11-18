@@ -137,11 +137,14 @@ dRaw <- read.csv("../../Data/Daten_für Nico_rapid_AST_Paper_V6.csv", header=TRU
 dRaw <- dRaw[!is.na(dRaw$diameter), ]
 dRaw <- dRaw[!is.na(dRaw$phenotypes), ]
 
+dRaw$antibiotic <- revalue(dRaw$antibiotic, c("Minocyclin"="Minocycline"))
+
 dRaw$h <- as.numeric(gsub("[a-z.]", "", dRaw$h))
 
 dRaw$phenotypes <- substring(dRaw$phenotypes, 2)  # removes leading ";"
 # dRaw$phenotypes[is.na(dRaw$phenotypes == "")] = 'NA'
 dRaw$phenotypes <- factor(dRaw$phenotypes)
+dRaw$phenotypes <- revalue(dRaw$phenotypes, c("effux PLUS ribosomal protection"="efflux PLUS ribosomal protection"))
 
 nPt <- max(lengths(strsplit(levels(dRaw$phenotypes), ';')))
 dRaw <- dRaw %>% separate(phenotypes, sep=";", into=paste0("phenotype", 1:3), fill="right") %>% gather("tmp", "phenotypes", 4:6, na.rm=TRUE) %>% select(-tmp)
@@ -152,6 +155,14 @@ dRaw$checkin <- factor(dRaw$checkin)
 dRaw$hDiscr <- factor(round(dRaw$h))
 
 dRaw <- droplevels(dRaw)
+
+# Modify data as requested by Michael Hombach (10.11.2016):
+dRaw <- dRaw %>% filter(!(organism %in% c("Enterobacter cloacae", "Escherichia coli", "Klebsiella pneumoniae") & antibiotic %in% c("Minocycline", "Tetracycline")))
+
+idx <- dRaw$organism == "Staphylococcus aureus" & dRaw$antibiotic == "Tetracycline" & dRaw$phenotypes == "efflux PLUS ribosomal protection"
+levels(dRaw$phenotypes) <- c(levels(dRaw$phenotypes), "tetB efflux and/or ribosomal protection")
+dRaw$phenotypes[idx] = "tetB efflux and/or ribosomal protection"
+dRaw$phenotypes <- factor(dRaw$phenotypes)
 ```
 
 
@@ -159,8 +170,6 @@ dRaw <- droplevels(dRaw)
 ```{r, echo=FALSE, warning=FALSE, fig.height=5.5, results='asis'}
 showAllPlots <- FALSE
 groupRarePhenotypes <- FALSE
-
-dAUC <- data.frame()
 
 cat('\n\n\\pagebreak\n')
 
@@ -263,3 +272,85 @@ for (ab in levels(dRaw$antibiotic)) {
 }
 ```
 
+
+
+```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+# Auxillary figure for Fig. 2 (main text)
+
+# ENTERO:
+# 
+# Remain:
+# "AAC(2')/AAC(3')-II/-IV"
+# "ANT(4')/AAC(6')-Ib"
+# "ESBL"
+# 
+# Change:
+# "AmpC hyperproduction"  ="aquired AmpC or AmpC hyperproduction"
+# "aquired AmpC"          ="aquired AmpC or AmpC hyperproduction"
+# "Carbapenemase class A" ="class A carbapenemase (KPC type)"
+# "Carbapenemase class B" ="class B beta-lactamases (NDM and VIM type)"
+# "high level resistance" ="high level quinolone resistance"
+# "KPC"                   ="class A carbapenemase (KPC type)"
+# "low level resistance"  ="low level quinolone resistance"
+# "multiple mechanisms"   ="multiple aminoglycoside resistance mechanisms"
+# "NDM"                   ="class B beta-lactamases (NDM and VIM type)"
+# "non-wild-type"         ="non-wild-type without specified mechanism"
+# "other beta-lactamases*"="other beta-lactamases (non-ESBL, non-AmpC, non-carbapenemase)"
+# "OXA-48"                ="class D beta-lactamases (OXA-48 type)"
+# "VIM"                   ="class B beta-lactamases (NDM and VIM type)"
+# 
+# 
+# "RND pump"              = ?????
+# 
+# 
+# STAPH
+# 
+# Remain:
+# "ANT(4')/APH(3')"
+# "APH(3')"
+# "blaZ Penicillinase"
+# "non-tetB-efflux"
+# 
+# Change:
+# "cMLS"                            ="constitutive ermMLS"
+# "Efflux"                          ="tetB efflux and/or ribosomal protection"
+# "efflux PLUS ribosomal protection"="tetB efflux and/or ribosomal protection"
+# "high level resistance"           ="high level quinolone resistance"
+# "iMLS"                            ="inducible ermMLS"
+# "lnu"
+# "low level resistance"            ="low level quinolone resistance"
+# "multiple mechanisms"             ="multiple aminoglycoside resistance mechanisms"
+# "non-wild-type"                   ="non-wild-type without specified mechanism"
+# "PBP2a"                           ="PBP2a"
+```
+
+```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+# tmpNonWt <- dRaw %>% filter(phenotypes != "wild-type") %>% group_by(organism, antibiotic, phenotypes, hDiscr) %>% summarise(q95=quantile(diameter, 0.95))
+# tmpWt <- dRaw %>% filter(phenotypes == "wild-type") %>% group_by(organism, antibiotic, hDiscr) %>% summarise(q05wt=quantile(diameter, 0.05))
+# tmp <- left_join(tmpNonWt, tmpWt, by=c("organism", "antibiotic", "hDiscr")) %>% mutate(wellSeparable=(q05wt > q95), group=factor(c("Enterobacteriaceae", "staphylococci"))[organism %in% c("Staphylococcus aureus", "Staphylococcus epidermidis") + 1]) %>% group_by(group, antibiotic, phenotypes, hDiscr) %>% summarise(wellSeparable=factor(mean(wellSeparable)))
+# 
+# for (g in levels(tmp$group)) {
+#   print(tmp %>% filter(group == g) %>% ggplot(aes(x=hDiscr, y=antibiotic, colour=wellSeparable)) + facet_grid(. ~ phenotypes) + geom_point() + theme(legend.position="top", strip.text.x=element_text(angle=90)) + ggtitle(g))
+# }
+```
+
+\newpage
+
+# Auxillary figure for Tab. 2 (main text)
+
+```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+cutoff <- 1  # adjust manually in figure legend below!!
+discrDeltaDiam <- function(d) {
+  ifelse(d < -cutoff, 1, ifelse(d > cutoff, 3, 2))
+}
+
+tmp <- dRaw
+tmp$organism <- revalue(tmp$organism, c("Escherichia coli"="E. coli", "Enterobacter cloacae"="E. cloacae", "Klebsiella pneumoniae"="K. pneumoniae", "Staphylococcus aureus"="S. aureus", "Staphylococcus epidermidis"="S. epidermidis"))
+dTab2 <- tmp %>% filter(phenotypes == "wild-type") %>%
+  group_by(organism, antibiotic, h) %>% summarise(q05Diam=quantile(diameter, 0.05)) %>%
+  mutate(deltaDiam=(q05Diam[h == 18] - q05Diam[h == 6])) %>% mutate(deltaDiscr=factor(discrDeltaDiam(deltaDiam), levels=1:3))
+
+ggplot(dTab2, aes(x=h, y=q05Diam, colour=deltaDiscr)) + geom_line() + geom_point() + facet_grid(antibiotic ~ organism) + scale_x_continuous(breaks=c(6, 8, 12, 18)) + scale_y_continuous(breaks=c(20, 40)) + theme(strip.text.y=element_text(angle=0), legend.position="top") + xlab("time / h") + ylab("5th percentile of diameter for wild-type strains / mm") + scale_colour_manual(name=expression(Delta==d[18*h]-d[6*h]), values=c("orangered3", "skyblue4", "orange"), labels=c(expression("decrease "*(Delta < -1*mm)), expression("stable "*(-1*mm<=paste(Delta<=1*mm))), expression("increase "*(Delta>1*mm))))
+
+dTab2 %>% select(organism, antibiotic, deltaDiscr) %>% unique %>% spread(organism, deltaDiscr) %>% write.table("tab2.csv", sep=";", row.names=FALSE)
+```
