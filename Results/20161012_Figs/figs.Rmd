@@ -10,141 +10,25 @@ output:
 
 
 ```{r loadLibs, echo=FALSE, warning=FALSE, message=FALSE}
-library(gdata) # read.xls()
-library(ggplot2)
-library(reshape2)  # melt()
-library(scales)  # pretty_breaks()
-library(plyr)  # revalue()
-library(dplyr)
-library(RColorBrewer)
-library(printr)
-library(knitr)
-library(cowplot)
-library(pander)
-library(tidyr)
-library(pROC)
-
-# cols <- c(1, brewer.pal(8, 'Set1'))[c(9, 1, 2, 5, 4, 6, 3, 8)]
-
-scale_colour_discrete <- function(...) scale_colour_brewer(..., palette="Set1")
-scale_fill_discrete <- function(...) scale_fill_brewer(..., palette="Set1")
-
-theme_set(theme_bw(base_size=10) + theme(panel.grid.major=element_line(size=0.25), panel.grid.minor=element_blank(), plot.title=element_text(size=10, face="bold")))
-```
-
-
-
-```{r defineFuncs, echo=FALSE, warning=FALSE, fig.height=7, results='asis'}
-myQ <- function(x) {
-  r <- quantile(x, probs = c(0, 0.05, 0.5, 0.95, 1))
-  names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
-  r
-}
-
-addBoxplot <- function(plt) {
-  plt + stat_summary(fun.data=myQ, geom='boxplot', position='dodge', aes(width=0.5))
-}
-
-masterplot <- function(d) {
-  # Duplicate wt-data, we use the "phenotypes" for facetting and "isWt" for filling:
-  dTmpDupl <- d %>% select(phenotypes, hDiscr, diameter) %>% filter(phenotypes != wt) %>% mutate(isWt="non-wild-type")
-  dTmpWt <- d %>% select(phenotypes, hDiscr, diameter) %>% filter(phenotypes == wt) %>% select(-phenotypes) %>% mutate(isWt="wild-type")
-  for (pt in allNonWt) {
-    dTmpDupl <- rbind(dTmpDupl, data.frame(dTmpWt, phenotypes=pt))
-  }
-  
-  addBoxplot(ggplot(dTmpDupl, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE)) %>% polishPlot
-}
-
-lineplotHombachPanel <- function(d) {
-  polishPanel(ggplot(d, aes(x=h, y=diameter, group=checkin, colour=isWt)) + geom_point() + geom_line() + scale_x_continuous(breaks=c(6, 8, 12, 18), minor=NULL))
-}
-
-lineplotHombachMaster <- function(d) {
-  pltWt <- lineplotHombachPanel(dTmp[dTmp$phenotypes == wt, ])
-  
-  pltNonWt <- list()
-  pltWtAndNonWt <- list()
-  for (i in 1:(nlevels(dTmp$phenotypes) - 1)) {
-    nonWt <- allNonWt[i]
-    pltNonWt[[i]] <- lineplotHombachPanel(dTmp[dTmp$phenotypes == nonWt, ])
-    pltWtAndNonWt[[i]] <- lineplotHombachPanel(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ])
-  }
-  
-  allPlots <- list()
-  for (i in 1:(3 * (nlevels(dTmp$phenotypes) - 1))) {
-    if (i %% 3 == 1) {
-      allPlots[[i]] = pltWt
-    } else if (i %% 3 == 2) {
-      allPlots[[i]] = pltNonWt[[i %/% 3 + 1]]
-    } else if (i %% 3 == 0) {
-      allPlots[[i]] = pltWtAndNonWt[[i %/% 3]]
-    }
-  }
-  
-  labels <- as.vector(t(array(c(paste0('(', letters[1:nlevels(dTmp$phenotypes)], ') ', c(allNonWt, 'all phenotypes combined')), rep('', 2 * nlevels(dTmp$phenotypes))), c(nlevels(dTmp$phenotypes), 3))))
-  
-  do.call("plot_grid", c(allPlots, ncol=3, labels=list(labels), label_size=6, hjust=0, vjust=0.8))
-}
-
-lineplotWFacets <- function(d) {
-  polishPlot(ggplot(dTmp, aes(x=h, y=diameter, group=checkin, colour=isWt)) + geom_line() + geom_point() + facet_wrap(~ phenotypes) + scale_x_continuous(breaks=c(6, 8, 12, 18), minor=NULL) + scale_colour_discrete(""))
-}
-
-myBoxplot <- function(d) {
-  ggplot(d, aes(x=hDiscr, y=diameter, fill=phenotypes)) %>% addBoxplot %>% polishPanel
-}
-
-polishPanel <- function(plt) {
-  polishPlot(plt + guides(colour=FALSE, fill=FALSE) + scale_colour_discrete(drop=FALSE))
-}
-
-polishPlot <- function(plt) {
-  plt + xlab('time / h') + ylab('diameter / mm') + coord_cartesian(ylim=c(6, 40)) + theme(legend.position="top", strip.text.x=element_text(face='bold'))
-}
-
-plotOverviewAntibiotic <- function(d, type="boxplot", groupRarePhenotypes=FALSE) {
-  stopifnot(type %in% c("boxplot", "lineplot"))
-  importantSpecies <- c("Escherichia coli", "Klebsiella pneumoniae", "Enterobacter cloacae", "Staphylococcus epidermidis", "Staphylococcus aureus")
-  
-  dSummary <- d[d$organism %in% importantSpecies, ]
-  dSummary$organism <- factor(dSummary$organism, levels=importantSpecies)
-  
-  if (groupRarePhenotypes) {
-    # Group rare phenotypes together:
-    dSummary$phenotypes <- factor(dSummary$phenotypes)
-    rarePhenotypes <- names(which(table(dSummary$phenotypes) < 20 * 4))
-    if (length(rarePhenotypes) > 1) {
-      repl = rep('others', length(rarePhenotypes))
-      names(repl) = rarePhenotypes
-      dSummary$phenotypes <- revalue(dSummary$phenotypes, replace=repl)
-    }
-  }
-  
-  plt <- if (type == "boxplot") {
-    addBoxplot(ggplot(dSummary, aes(x=hDiscr, y=diameter, fill=organism)) + scale_fill_discrete(drop=FALSE))
-  } else {
-    ggplot(dSummary, aes(x=h, y=diameter, group=checkin, colour=organism)) + geom_point() + geom_line() + scale_colour_discrete(drop=FALSE) + scale_x_continuous(breaks=c(6, 8, 12, 18))
-  }
-  plt + facet_wrap(~ phenotypes) + theme(legend.position="top") + xlab('time/h') + ylab('diameter/mm')
-}
+source("../../Scripts/helper.R")
 ```
 
 
 
 ```{r readData, echo=FALSE, warning=FALSE, cache=TRUE}
-dRaw <- read.csv("../../Data/Daten_für Nico_rapid_AST_Paper_V6.csv", header=TRUE, sep=';', na.strings='') %>% gather('h', 'diameter', 4:7)
+dRaw <- read.csv("../../Data/Daten_für Nico_rapid_AST_Paper_V7.csv", header=TRUE, sep=';', na.strings='') %>% gather('h', 'diameter', 4:7)
 dRaw <- dRaw[!is.na(dRaw$diameter), ]
 dRaw <- dRaw[!is.na(dRaw$phenotypes), ]
 
-dRaw$antibiotic <- revalue(dRaw$antibiotic, c("Minocyclin"="Minocycline"))
+dRaw$organism <- revalue(dRaw$organism, c("Escherichia coli"="E. coli", "Enterobacter cloacae"="E. cloacae", "Klebsiella pneumoniae"="K. pneumoniae", "Staphylococcus aureus"="S. aureus", "Staphylococcus epidermidis"="S. epidermidis"))
+
+dRaw$antibiotic <- revalue(dRaw$antibiotic, c("Kanamycine"="Kanamycin"))
 
 dRaw$h <- as.numeric(gsub("[a-z.]", "", dRaw$h))
 
 dRaw$phenotypes <- substring(dRaw$phenotypes, 2)  # removes leading ";"
 # dRaw$phenotypes[is.na(dRaw$phenotypes == "")] = 'NA'
 dRaw$phenotypes <- factor(dRaw$phenotypes)
-dRaw$phenotypes <- revalue(dRaw$phenotypes, c("effux PLUS ribosomal protection"="efflux PLUS ribosomal protection"))
 
 nPt <- max(lengths(strsplit(levels(dRaw$phenotypes), ';')))
 dRaw <- dRaw %>% separate(phenotypes, sep=";", into=paste0("phenotype", 1:3), fill="right") %>% gather("tmp", "phenotypes", 4:6, na.rm=TRUE) %>% select(-tmp)
@@ -155,202 +39,68 @@ dRaw$checkin <- factor(dRaw$checkin)
 dRaw$hDiscr <- factor(round(dRaw$h))
 
 dRaw <- droplevels(dRaw)
-
-# Modify data as requested by Michael Hombach (10.11.2016):
-dRaw <- dRaw %>% filter(!(organism %in% c("Enterobacter cloacae", "Escherichia coli", "Klebsiella pneumoniae") & antibiotic %in% c("Minocycline", "Tetracycline")))
-
-idx <- dRaw$organism == "Staphylococcus aureus" & dRaw$antibiotic == "Tetracycline" & dRaw$phenotypes == "efflux PLUS ribosomal protection"
-levels(dRaw$phenotypes) <- c(levels(dRaw$phenotypes), "tetB efflux and/or ribosomal protection")
-dRaw$phenotypes[idx] = "tetB efflux and/or ribosomal protection"
-dRaw$phenotypes <- factor(dRaw$phenotypes)
 ```
 
 
 
 ```{r, echo=FALSE, warning=FALSE, fig.height=5.5, results='asis'}
-showAllPlots <- FALSE
-groupRarePhenotypes <- FALSE
+masterLoop(manuscript=2)
+```
 
-cat('\n\n\\pagebreak\n')
+# Auxillary figure for Fig. 2 (main text)
 
-for (ab in levels(dRaw$antibiotic)) {
-  pandoc.header(paste(sep=', ', ab), 1)
+```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+dRaw$phenotypeGroup <- revalue(dRaw$phenotypes, c(
+  "AmpC hyperproduction"                   ="aquired AmpC or AmpC hyperproduction",
+  "aquired AmpC"                           ="aquired AmpC or AmpC hyperproduction",
+  "high level resistance"                  ="high level quinolone resistance",
+  "KPC"                                    ="class A carbapenemase (KPC type)",
+  "low level resistance"                   ="low level quinolone resistance",
+  "multiple mechanisms"                    ="multiple aminoglycoside resistance mechanisms",
+  "NDM"                                    ="class B beta-lactamases (NDM and VIM type)",
+  "non-wild-type"                          ="non-wild-type without specified mechanism",
+  "other beta-lactamases*"                 ="other beta-lactamases (non-ESBL, non-AmpC, non-carbapenemase)",
+  "OXA-48"                                 ="class D beta-lactamases (OXA-48 type)",
+  "RND pump"                               ="RND-pump mediated efflux",
+  "VIM"                                    ="class B beta-lactamases (NDM and VIM type)",
+  "cMLS"                                   ="constitutive ermMLS",
+  "Efflux"                                 ="tetB efflux and/or ribosomal protection",
+  "iMLS"                                   ="inducible ermMLS",
+  "lnu"                                    ="lnu-gene"))
 
-  d <- filter(dRaw, antibiotic == ab) %>% select(-antibiotic)
-  
-  if (showAllPlots) {
-    print(plotOverviewAntibiotic(d, groupRarePhenotypes=groupRarePhenotypes))  # Summary figure for individual antibiotics
-    cat('\n\n\\pagebreak\n')
-  }
-  
-  # Group Enterobacteriaceae with few data together:
-  smallEnterobacteriaceae <- setdiff(names(which(table(d$organism) < 20 * 4)), c("Staphylococcus aureus", "Staphylococcus epidermidis"))
-  repl <- rep('other Enterobacteriaceae', length(smallEnterobacteriaceae))
-  names(repl) <- smallEnterobacteriaceae
-  d$organism <- revalue(d$organism, replace=repl)
-  
-  for (sp in levels(d$organism)) {
-    dTmp <- filter(d, organism == sp) %>% select(-organism)
-    if (nrow(dTmp) == 0) {
-      next
-    }
-    
-    pandoc.header(paste0(ab, ", *", sp, "*"), 2)
-    
-    dTmp$phenotypes <- factor(dTmp$phenotypes)
-    wt <- levels(dTmp$phenotypes)[c(grep(" wild-type", levels(dTmp$phenotypes)), which("Wild-type" == levels(dTmp$phenotypes)), which("wild-type" == levels(dTmp$phenotypes)), which("Wild type" == levels(dTmp$phenotypes)), which("wild type" == levels(dTmp$phenotypes)))]
-    if (length(wt) == 0) {
-      cat('\n\n', paste(sep=', ', ab, sp), ': No data for wild type available.\n\n')
-      next
-    }
-    stopifnot(length(wt) == 1)
-    
-    if (groupRarePhenotypes) {
-      # Group rare phenotypes together:
-      rarePhenotypes <- setdiff(names(which(table(dTmp$phenotypes) < 5 * 4)), wt)
-      if (length(rarePhenotypes) > 1) {
-        repl <- rep('others', length(rarePhenotypes))
-        names(repl) <- rarePhenotypes
-        dTmp$phenotypes <- revalue(dTmp$phenotypes, replace=repl)
-      }
-    }
-    
-    allNonWt <- setdiff(levels(dTmp$phenotypes), wt)
-    
-    isWtLvls <- c("non-wild-type", "wild-type")
-    dTmp$isWt <- factor(isWtLvls[(dTmp$phenotypes == wt) + 1], levels=isWtLvls)
-    
-    #######################################
-    # Number of data points per phenotype #
-    #######################################
-    
-    cat('\n\n\n\n')
-    dTmp %>% group_by(phenotypes) %>% summarise(n=n_distinct(checkin)) %>% rename(phenotype=phenotypes) %>% kable %>% print
-    cat('\n\n\n\n')
-    
-    ##############
-    # Masterplot #
-    ##############
-    
-    if (length(allNonWt) == 0) {
-      addBoxplot(ggplot(dTmp, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE)) %>% polishPlot %>% print
-      cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}.\n\n')
-      cat('\n\n\\pagebreak\n')
-      next
-    }
-    
-    masterplot(dTmp) %>% print
-    
-    ######################
-    # Caption / footnote #
-    ######################
-    
-    cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}. Boxes range from the 5th to the 95th percentiles, whiskers cover the whole range of the data, and thick lines indicate medians.\n\n')
-    
-    ####################
-    # Additional plots #
-    ####################
-    
-    if (showAllPlots) {
-      cat('\n\n\\pagebreak\n')
-      print(lineplotHombachMaster(dTmp))  # lineplot requested by M. Hombach and M. Jetter
-      cat('\n\n\\pagebreak\n')
-      print(lineplotWFacets(dTmp))  # simple lineplot
-      
-      # More accessible figure based on boxplots:
-      bxplt <- list()
-      for (i in 1:(nlevels(dTmp$phenotypes) - 1)) {
-        nonWt <- allNonWt[i]
-        bxplt[[i]] <- myBoxplot(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ]) + ggtitle(nonWt)
-      }
-      cat('\n\n\\pagebreak\n')
-      print(do.call("plot_grid", c(bxplt)))
-    }
-    
-    cat('\n\n\\pagebreak\n')
-  }
+stopifnot(dRaw %>% group_by(organism, checkin, antibiotic, hDiscr, phenotypeGroup) %>% summarise(count=n()) %>% filter(count == 4) %>% nrow == 0)  # checks that strains with multiple phenotypes are listed at most once per phenotypeGroup. Currently commented since this is violated.
+if (dRaw %>% group_by(organism, checkin, antibiotic, hDiscr, phenotypeGroup) %>% summarise(count=n()) %>% filter(count != 1) %>% nrow != 0){
+  cat("\n\nWARNING: DATA NOT CLEAN\n\n")
 }
 ```
 
-
-
 ```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
-# Auxillary figure for Fig. 2 (main text)
+tmpNonWt <- dRaw %>% filter(phenotypeGroup != "wild-type") %>% group_by(organism, antibiotic, phenotypeGroup, hDiscr) %>% summarise(q95=quantile(diameter, 0.95))
+tmpWt <- dRaw %>% filter(phenotypeGroup == "wild-type") %>% group_by(organism, antibiotic, hDiscr) %>% summarise(q05wt=quantile(diameter, 0.05))
+dFig2 <- left_join(tmpNonWt, tmpWt, by=c("organism", "antibiotic", "hDiscr")) %>% mutate(wellSeparable=(q05wt > q95), group=factor(c("Enterobacteriaceae", "staphylococci"))[organism %in% c("S. aureus", "S. epidermidis") + 1]) %>% group_by(group, antibiotic, phenotypeGroup, hDiscr) %>% summarise(wellSeparable=factor(mean(wellSeparable)))
+tmp <- setdiff(levels(dFig2$wellSeparable), c("0", "1"))
+tmp2 <- rep("separability differs among species", length(tmp))
+names(tmp2) <- tmp
+dFig2$wellSeparable <- revalue(dFig2$wellSeparable, c("0"="not separated", "1"="well separated", tmp2))
+dFig2$antibiotic <- factor(dFig2$antibiotic, levels=levels(dFig2$antibiotic)[rev(c(20, 1:7, 16, 21, 24,   8, 14, 18, 19,        12, 13, 27,    25, 17, 26,     10, 9,      11, 22, 15,    23))])
 
-# ENTERO:
-# 
-# Remain:
-# "AAC(2')/AAC(3')-II/-IV"
-# "ANT(4')/AAC(6')-Ib"
-# "ESBL"
-# 
-# Change:
-# "AmpC hyperproduction"  ="aquired AmpC or AmpC hyperproduction"
-# "aquired AmpC"          ="aquired AmpC or AmpC hyperproduction"
-# "Carbapenemase class A" ="class A carbapenemase (KPC type)"
-# "Carbapenemase class B" ="class B beta-lactamases (NDM and VIM type)"
-# "high level resistance" ="high level quinolone resistance"
-# "KPC"                   ="class A carbapenemase (KPC type)"
-# "low level resistance"  ="low level quinolone resistance"
-# "multiple mechanisms"   ="multiple aminoglycoside resistance mechanisms"
-# "NDM"                   ="class B beta-lactamases (NDM and VIM type)"
-# "non-wild-type"         ="non-wild-type without specified mechanism"
-# "other beta-lactamases*"="other beta-lactamases (non-ESBL, non-AmpC, non-carbapenemase)"
-# "OXA-48"                ="class D beta-lactamases (OXA-48 type)"
-# "VIM"                   ="class B beta-lactamases (NDM and VIM type)"
-# 
-# 
-# "RND pump"              = ?????
-# 
-# 
-# STAPH
-# 
-# Remain:
-# "ANT(4')/APH(3')"
-# "APH(3')"
-# "blaZ Penicillinase"
-# "non-tetB-efflux"
-# 
-# Change:
-# "cMLS"                            ="constitutive ermMLS"
-# "Efflux"                          ="tetB efflux and/or ribosomal protection"
-# "efflux PLUS ribosomal protection"="tetB efflux and/or ribosomal protection"
-# "high level resistance"           ="high level quinolone resistance"
-# "iMLS"                            ="inducible ermMLS"
-# "lnu"
-# "low level resistance"            ="low level quinolone resistance"
-# "multiple mechanisms"             ="multiple aminoglycoside resistance mechanisms"
-# "non-wild-type"                   ="non-wild-type without specified mechanism"
-# "PBP2a"                           ="PBP2a"
-```
+dFig2$phenotypeGroup <- factor(dFig2$phenotypeGroup, levels=levels(dFig2$phenotypeGroup)[c(6, 21, 2, 9, 12, 16, 20, 19, 10, 14, 5, 4, 3, 1, 15, 22, 17, 8, 7, 11, 13, 18)])
 
-```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
-# tmpNonWt <- dRaw %>% filter(phenotypes != "wild-type") %>% group_by(organism, antibiotic, phenotypes, hDiscr) %>% summarise(q95=quantile(diameter, 0.95))
-# tmpWt <- dRaw %>% filter(phenotypes == "wild-type") %>% group_by(organism, antibiotic, hDiscr) %>% summarise(q05wt=quantile(diameter, 0.05))
-# tmp <- left_join(tmpNonWt, tmpWt, by=c("organism", "antibiotic", "hDiscr")) %>% mutate(wellSeparable=(q05wt > q95), group=factor(c("Enterobacteriaceae", "staphylococci"))[organism %in% c("Staphylococcus aureus", "Staphylococcus epidermidis") + 1]) %>% group_by(group, antibiotic, phenotypes, hDiscr) %>% summarise(wellSeparable=factor(mean(wellSeparable)))
-# 
-# for (g in levels(tmp$group)) {
-#   print(tmp %>% filter(group == g) %>% ggplot(aes(x=hDiscr, y=antibiotic, colour=wellSeparable)) + facet_grid(. ~ phenotypes) + geom_point() + theme(legend.position="top", strip.text.x=element_text(angle=90)) + ggtitle(g))
-# }
+cnt <- 1
+for (g in levels(dFig2$group)) {
+  pandoc.header(paste(sep="", "Fig. ", cnt, " (main text): ", g), 1)
+  print(dFig2 %>% filter(group == g & hDiscr %in% c("8", "18")) %>% ggplot(aes(x=hDiscr, y=antibiotic, colour=wellSeparable)) + facet_grid(. ~ phenotypeGroup, drop=TRUE) + geom_point(size=2) + xlab('time / h') + theme(legend.position="top", strip.text.x=element_text(angle=90)) + scale_colour_manual(values=c("skyblue4", "orangered3", "orange")) + guides(colour=guide_legend(title="separability from wild type", title.position="top", title.hjust=0.5)))
+  ggsave(paste(sep="", "Figs/fig", cnt, ".png"), width=18, height=18, units="cm", dpi=1200, limitsize=TRUE)
+  cat("\n\n")
+  cnt <- cnt + 1
+}
 ```
 
 \newpage
 
-# Auxillary figure for Tab. 2 (main text)
+# Fig. 3 (main text)
 
 ```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
-cutoff <- 1  # adjust manually in figure legend below!!
-discrDeltaDiam <- function(d) {
-  ifelse(d < -cutoff, 1, ifelse(d > cutoff, 3, 2))
-}
-
-tmp <- dRaw
-tmp$organism <- revalue(tmp$organism, c("Escherichia coli"="E. coli", "Enterobacter cloacae"="E. cloacae", "Klebsiella pneumoniae"="K. pneumoniae", "Staphylococcus aureus"="S. aureus", "Staphylococcus epidermidis"="S. epidermidis"))
-dTab2 <- tmp %>% filter(phenotypes == "wild-type") %>%
-  group_by(organism, antibiotic, h) %>% summarise(q05Diam=quantile(diameter, 0.05)) %>%
-  mutate(deltaDiam=(q05Diam[h == 18] - q05Diam[h == 6])) %>% mutate(deltaDiscr=factor(discrDeltaDiam(deltaDiam), levels=1:3))
-
-ggplot(dTab2, aes(x=h, y=q05Diam, colour=deltaDiscr)) + geom_line() + geom_point() + facet_grid(antibiotic ~ organism) + scale_x_continuous(breaks=c(6, 8, 12, 18)) + scale_y_continuous(breaks=c(20, 40)) + theme(strip.text.y=element_text(angle=0), legend.position="top") + xlab("time / h") + ylab("5th percentile of diameter for wild-type strains / mm") + scale_colour_manual(name=expression(Delta==d[18*h]-d[6*h]), values=c("orangered3", "skyblue4", "orange"), labels=c(expression("decrease "*(Delta < -1*mm)), expression("stable "*(-1*mm<=paste(Delta<=1*mm))), expression("increase "*(Delta>1*mm))))
-
-dTab2 %>% select(organism, antibiotic, deltaDiscr) %>% unique %>% spread(organism, deltaDiscr) %>% write.table("tab2.csv", sep=";", row.names=FALSE)
+tab2()
+ggsave(paste(sep="", "Figs/fig3.png"), width=18, height=20, units="cm", dpi=1200, limitsize=TRUE)
 ```

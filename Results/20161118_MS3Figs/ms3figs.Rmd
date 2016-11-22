@@ -1,0 +1,48 @@
+---
+title: "Supplemental Figure 1: Manuscript III"
+author: "Marion Jetter, Nicolas Blöchliger, Michael Hombach*\\newline Institute of Medical Microbiology, University of Zurich, Gloriastrasse 30/32, 8006 Zürich, Switzerland"
+date: "`r format(Sys.time(), '%d/%m/%Y')`"
+output:
+  pdf_document:
+    number_sections: true
+    toc: true
+---
+
+
+```{r loadLibs, echo=FALSE, warning=FALSE, message=FALSE}
+source("../../Scripts/helper.R")
+```
+
+
+
+```{r readData, echo=FALSE, warning=FALSE, cache=TRUE}
+dRaw <- read.csv("../../Data/Daten_Grafiken_ AST_Paper_3.csv", header=TRUE, sep=';', na.strings='') %>% rename("6"=X6h, "8"=X8h, "12"=X12h, "18"=X18h, antibiotic=atb_acronim) %>% gather('h', 'diameter', 4:7)
+dRaw <- dRaw[!is.na(dRaw$diameter), ]
+dRaw <- dRaw[!is.na(dRaw$phenotypes), ]
+
+dRaw$h <- as.numeric(dRaw$h)
+
+dRaw$phenotypes <- revalue(dRaw$phenotypes, c("GP-wild-type"="GP wild-type"))
+oldNames <- c(levels(dRaw$phenotypes)[grep(" wild-type", levels(dRaw$phenotypes))])
+tmp <- rep("wild-type", length(oldNames))
+names(tmp) <- oldNames
+dRaw$phenotypes <- revalue(dRaw$phenotypes, tmp)
+
+dRaw$checkin <- factor(dRaw$barcode)
+dRaw$barcode <- NULL
+
+dRaw$hDiscr <- factor(round(dRaw$h))
+
+dRaw <- droplevels(dRaw)
+```
+
+
+```{r, echo=FALSE, warning=FALSE, fig.height=5.5, results='asis'}
+masterLoop(manuscript=3)
+```
+
+# Auxiliary figure for Tab. 2 (main text)
+
+```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+tab2()
+```

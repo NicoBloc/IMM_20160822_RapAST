@@ -1,0 +1,8 @@
+16.11.2016
+
+Notizen zum Manuskript:
+
+* Was ist genau mit "Study isolates were selected covering a broad range of inhibition zone diameters for each species/drug combination tested. In particular, critical isolates close to the CBPs were included." gemeint? Siehe auch Kommentar des zweiten Referees zu MS1 (Zeile 97).
+* Abb. 1 and 2: Wie wurde die Separierbarkeit für Kombinationen von Phänotypen berechnet (z.B. "aquiered AmpC or AmpC hyperproduction")?
+* Abb. 1: Ciprofloxacin & low-level quinolone resistance scheint falsch zu sein.
+* Kontrolliere Tab. 2
