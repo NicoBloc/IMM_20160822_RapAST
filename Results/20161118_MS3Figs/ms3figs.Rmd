@@ -27,6 +27,16 @@ oldNames <- c(levels(dRaw$phenotypes)[grep(" wild-type", levels(dRaw$phenotypes)
 tmp <- rep("wild-type", length(oldNames))
 names(tmp) <- oldNames
 dRaw$phenotypes <- revalue(dRaw$phenotypes, tmp)
+dRaw$phenotypes[dRaw$phenotypes == "non-highlevel resistance" & dRaw$antibiotic %in% c("Gentamicine", "Gentamicin")] = "wild-type"
+dRaw$phenotypes <- factor(dRaw$phenotypes)
+# Make sure that "wild-type" is the last level of d$phenotypes:
+lvls <- levels(dRaw$phenotypes)
+idx <- which(lvls == "wild-type")
+if (idx != length(lvls)) {
+  lvls[idx] = lvls[length(lvls)]
+  lvls[length(lvls)] = "wild-type"
+  dRaw$phenotypes <- factor(dRaw$phenotypes, levels=lvls)
+}
 
 dRaw$checkin <- factor(dRaw$barcode)
 dRaw$barcode <- NULL
@@ -37,7 +47,7 @@ dRaw <- droplevels(dRaw)
 ```
 
 
-```{r, echo=FALSE, warning=FALSE, fig.height=5.5, results='asis'}
+```{r, echo=FALSE, warning=FALSE, fig.height=4.5, results='asis'}
 masterLoop(manuscript=3)
 ```
 

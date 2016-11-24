@@ -269,4 +269,5 @@ tab2 <- function() {
                                        expression("increase "*(Delta>1*mm))), drop=FALSE))
   
   dTab2 %>% select(organism, antibiotic, deltaDiscr) %>% unique %>% spread(organism, deltaDiscr) %>% write.table("tab2.csv", sep=";", row.names=FALSE)
+  ggsave(paste(sep="", "Figs/fig3.png"), width=18, height=22, units="cm", dpi=1200, limitsize=TRUE)
 }
