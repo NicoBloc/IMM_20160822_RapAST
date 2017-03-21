@@ -1,11 +1,12 @@
 ---
-title: "Supplemental Figure 1: Manuscript III"
-author: "Marion Jetter, Nicolas Blöchliger, Michael Hombach*\\newline Institute of Medical Microbiology, University of Zurich, Gloriastrasse 30/32, 8006 Zürich, Switzerland"
-date: "`r format(Sys.time(), '%d/%m/%Y')`"
+title: "Supplemental Figure 1: Separation of wild-type and non-wild-type populations"
+header-includes:
+   - \usepackage{booktabs}
 output:
   pdf_document:
     number_sections: true
     toc: true
+    keep_tex: true
 ---
 
 
@@ -17,12 +18,12 @@ source("../../Scripts/helper.R")
 
 ```{r readData, echo=FALSE, warning=FALSE, cache=TRUE}
 dRaw <- read.csv("../../Data/Daten_Grafiken_ AST_Paper_3.csv", header=TRUE, sep=';', na.strings='') %>% rename("6"=X6h, "8"=X8h, "12"=X12h, "18"=X18h, antibiotic=atb_acronim) %>% gather('h', 'diameter', 4:7)
-dRaw <- dRaw[!is.na(dRaw$diameter), ]
 dRaw <- dRaw[!is.na(dRaw$phenotypes), ]
 
+dRaw$organism <- factor(dRaw$organism, levels=c("E. faecalis", "E. faecium", "P. aeruginosa", "A. baumanii"))
 dRaw$h <- as.numeric(dRaw$h)
 
-dRaw$phenotypes <- revalue(dRaw$phenotypes, c("GP-wild-type"="GP wild-type"))
+dRaw$phenotypes <- revalue(dRaw$phenotypes, c("GP-wild-type"="GP wild-type", "beta-Lactamase-non-wild-type"="beta-Lactam-non-wild-type"))
 oldNames <- c(levels(dRaw$phenotypes)[grep(" wild-type", levels(dRaw$phenotypes))])
 tmp <- rep("wild-type", length(oldNames))
 names(tmp) <- oldNames
@@ -38,10 +39,17 @@ if (idx != length(lvls)) {
   dRaw$phenotypes <- factor(dRaw$phenotypes, levels=lvls)
 }
 
+dRaw$antibiotic <- revalue(dRaw$antibiotic, c("Amikacine"="Amikacin", "Ampicilline"="Ampicillin", "Ciprofloxacine"="Ciprofloxacin", "Gentamicine"="Gentamicin", "Imipeneme"="Imipenem", "Levofloxacine"="Levofloxacin", "Meropeneme"="Meropenem", "Norfloxacine"="Norfloxacin", "Piperacilline/Tazobactam"="Piperacillin/Tazobactam", "Tobramycine"="Tobramycin", "Vancomycine"="Vancomycin"))
+
 dRaw$checkin <- factor(dRaw$barcode)
 dRaw$barcode <- NULL
 
 dRaw$hDiscr <- factor(round(dRaw$h))
+
+dRaw$antibiotic <- factor(dRaw$antibiotic, levels=c("Ampicillin", "Piperacillin/Tazobactam", "Cefepime", "Ceftazidime", "Imipenem", "Meropenem", "Gentamicin", "Tobramycin", "Amikacin", "Norfloxacin", "Ciprofloxacin", "Levofloxacin", "Vancomycin"))
+
+# Change requested by Erik Böttger (21.03.2017):
+dRaw <- dRaw %>% filter(organism != "P. aeruginosa" | antibiotic != "Levofloxacin")
 
 dRaw <- droplevels(dRaw)
 ```
@@ -49,9 +57,26 @@ dRaw <- droplevels(dRaw)
 
 ```{r, echo=FALSE, warning=FALSE, fig.height=4.5, results='asis'}
 masterLoop(manuscript=3)
+
+dRaw <- dRaw[!is.na(dRaw$diameter), ]
 ```
 
-# Auxiliary figure for Tab. 2 (main text)
+
+
+```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
+tmpNonWt <- dRaw %>% filter(phenotypes != "wild-type") %>% group_by(organism, antibiotic, phenotypes, hDiscr) %>% summarise(q95=quantile(diameter, 0.95))
+tmpWt <- dRaw %>% filter(phenotypes == "wild-type") %>% group_by(organism, antibiotic, hDiscr) %>% summarise(q05wt=quantile(diameter, 0.05))
+dFig2 <- left_join(tmpNonWt, tmpWt, by=c("organism", "antibiotic", "hDiscr")) %>% mutate(wellSeparable=(q05wt > q95))
+dFig2$wellSeparable <- revalue(factor(dFig2$wellSeparable), c("FALSE"="not separated", "TRUE"="well separated"))
+
+dFig2$antibiotic <- factor(dFig2$antibiotic, levels=rev(levels(dFig2$antibiotic)))
+
+
+plt <- dFig2 %>% ggplot(aes(x=hDiscr, y=antibiotic, colour=wellSeparable)) + facet_grid(. ~ organism, drop=TRUE) + geom_point(size=2) + xlab('time / h') + theme(legend.position="top", strip.text.x=element_text(angle=90)) + scale_colour_manual(values=c("orangered3", brewer.pal(3, 'Set1')[3])) + guides(colour=guide_legend(title="separability from wild type", title.position="top", title.hjust=0.5))
+ggsave(paste(sep="", "Figs/fig1.png"), plot=plt, width=9, height=12, units="cm", dpi=1200, limitsize=TRUE)
+```
+
+
 
 ```{r, echo=FALSE, warning=FALSE, fig.height=8.5, results='asis'}
 tab2()
