@@ -2,6 +2,7 @@
 # Load libs #
 #############
 
+library(multcomp)  # glht
 library(gdata) # read.xls()
 library(ggplot2)
 library(reshape2)  # melt()
@@ -15,6 +16,10 @@ library(cowplot)
 library(pander)
 library(tidyr)
 library(pROC)
+library(gtable)
+library(gridExtra)
+library(grid)
+library(prevalence)  # propCI()
 
 ##########################
 # Configure ggplot-theme #
@@ -23,7 +28,7 @@ library(pROC)
 scale_colour_discrete <- function(...) scale_colour_brewer(..., palette="Set1")
 scale_fill_discrete <- function(...) scale_fill_brewer(..., palette="Set1")
 
-theme_set(theme_bw(base_size=10) + theme(panel.grid.major=element_line(size=0.25), panel.grid.minor=element_blank(), plot.title=element_text(size=10, face="bold")))
+theme_set(theme_bw(base_size=10) + theme(panel.grid.major=element_line(size=0.25), panel.grid.minor=element_blank()))
 
 #########################
 # Define some functions #
@@ -47,7 +52,50 @@ masterplot <- function(d, wt, allNonWt) {
     dTmpDupl <- rbind(dTmpDupl, data.frame(dTmpWt, phenotypes=pt))
   }
   
-  addBoxplot(ggplot(dTmpDupl, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE)) %>% polishPlot
+  addBoxplot(ggplot(dTmpDupl, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_grid(~ phenotypes) + scale_fill_discrete("", drop=FALSE) + theme(aspect.ratio=0.45 + 0.5 * length(allNonWt) * 0.9 / 7)) %>% polishPlot
+}
+
+aucBreaks <- function(dAUC) {
+  # breaks for y-axis of aucPlot()
+  a <- min(0.95, 0.1 * ceiling(10 * min(dAUC$AUC, dAUC$lower, na.rm=TRUE)))
+  if (a == 0.95) {
+    c(0.95, 1)
+  } else if (a >= 0.6) {
+    seq(from=a, to=1, by=0.1)
+  } else {
+    c(a, (a + 1) / 2, 1)
+  }
+}
+
+aucPlot <- function(d, manuscript, wt=NULL, allNonWt=NULL) {
+  dAUC <- data.frame()
+  for (hh in unique(d$h)) {
+    if (manuscript == 2) {
+      for (pt in allNonWt) {
+        idx <- d$h == hh & d$phenotypes %in% c(pt, wt)
+        auc <- auc(d$isWt[idx], d$diameter[idx])
+        ci <- ci.auc(auc)
+        dAUC <- rbind(dAUC, data.frame(phenotypes=pt, h=hh, AUC=auc, lower=ci[1], upper=ci[3]))
+      }
+    } else if (manuscript == 3) {
+      idx <- d$h == hh
+      auc <- auc(d$isWt[idx], d$diameter[idx])
+      ci <- ci.auc(auc)
+      dAUC <- rbind(dAUC, data.frame(h=hh, AUC=auc, lower=ci[1], upper=ci[3]))
+    }
+  }
+  
+  c1 <- "black"
+  c2 <- "grey60"
+  
+  plt <- ggplot(dAUC, aes(x=h, y=AUC, ymin=lower, ymax=upper)) + geom_line(colour=c2) + geom_errorbar(width=1.5, colour=c1) + geom_point(colour=c1) + xlab('time / h') + ylab('AUC') + scale_x_continuous(breaks=c(6, 8, 12, 18)) + scale_y_continuous(breaks=aucBreaks(dAUC))  + coord_cartesian(ylim=c(min(0.95, dAUC$AUC, dAUC$lower, na.rm=TRUE), 1)) # + scale_y_continuous(breaks=c(0.5, 0.75, 1))
+  
+  if (manuscript == 2) {
+    plt <- plt + facet_grid(~ phenotypes) + theme(strip.text.x=element_text(face='bold'), aspect.ratio=(0.23 + 0.5 * length(allNonWt) * 0.46 / 7))  # , plot.background=element_rect(fill="grey90")
+  } else if (manuscript == 3) {
+    plt <- plt + theme(aspect.ratio=(0.5))
+  }
+  return(plt)
 }
 
 lineplotHombachPanel <- function(d) {
@@ -86,7 +134,7 @@ lineplotWFacets <- function(d) {
 }
 
 myBoxplot <- function(d) {
-  ggplot(d, aes(x=hDiscr, y=diameter, fill=phenotypes)) %>% addBoxplot %>% polishPanel
+  polishPanel((ggplot(d, aes(x=hDiscr, y=diameter, fill=phenotypes)) %>% addBoxplot) + theme(aspect.ratio=(0.7)))
 }
 
 polishPanel <- function(plt) {
@@ -123,6 +171,15 @@ plotOverviewAntibiotic <- function(d, type="boxplot", groupRarePhenotypes=FALSE)
   plt + facet_wrap(~ phenotypes) + theme(legend.position="top") + xlab('time/h') + ylab('diameter/mm')
 }
 
+alignPlots <- function(p1, p2) {
+  # Align two plots
+  # http://stackoverflow.com/questions/26159495/align-multiple-ggplot-graphs-with-and-without-legends
+  g1 <- ggplotGrob(p1)
+  g2 <- ggplotGrob(p2)
+  grob_combined <- gtable:::rbind_gtable(g1, g2, "last")
+  grid.newpage()
+  grid.draw(grob_combined)
+}
 
 ##############
 # Masterloop #
@@ -136,21 +193,27 @@ masterLoop <- function(manuscript) {
   
   cat('\n\n\\pagebreak\n')
   
-  for (ab in levels(dRaw$antibiotic)) {
+  for (ab in levels(dRaw$antibiotic)) {  # [c(1, 4, 7, 24)]
     pandoc.header(paste(sep=', ', ab), 1)
     
     d <- filter(dRaw, antibiotic == ab) %>% select(-antibiotic)
+    # Some modifications requested by Böttger (02.12.2016):
+    if (manuscript == 2) {
+      # d <- d %>% filter(!(organism == "S. epidermidis" & h == 6))
+    } else if (manuscript == 3) {
+      d <- d %>% filter(!(organism == "P. aeruginosa" & h == 6))
+    }
     
     if (showAllPlots) {
       print(plotOverviewAntibiotic(d, groupRarePhenotypes=groupRarePhenotypes))  # Summary figure for individual antibiotics
       cat('\n\n\\pagebreak\n')
     }
     
-    # Group Enterobacteriaceae with few data together:
-    smallEnterobacteriaceae <- setdiff(names(which(table(d$organism) < 20 * 4)), c("Staphylococcus aureus", "Staphylococcus epidermidis"))
-    repl <- rep('other Enterobacteriaceae', length(smallEnterobacteriaceae))
-    names(repl) <- smallEnterobacteriaceae
-    d$organism <- revalue(d$organism, replace=repl)
+    # # Group Enterobacteriaceae with few data together:
+    # smallEnterobacteriaceae <- setdiff(names(which(table(d$organism) < 20 * 4)), c("Staphylococcus aureus", "Staphylococcus epidermidis"))
+    # repl <- rep('other Enterobacteriaceae', length(smallEnterobacteriaceae))
+    # names(repl) <- smallEnterobacteriaceae
+    # d$organism <- revalue(d$organism, replace=repl)
     
     for (sp in levels(d$organism)) {
       dTmp <- filter(d, organism == sp) %>% select(-organism)
@@ -192,51 +255,78 @@ masterLoop <- function(manuscript) {
       #######################################
 
       cat('\n\n\n\n')
-      dTmp %>% group_by(phenotypes) %>% summarise(n=n_distinct(checkin)) %>% rename(phenotype=phenotypes) %>% kable %>% print
+      # dTmp %>% group_by(phenotypes) %>% summarise(n=n_distinct(checkin)) %>% rename(phenotype=phenotypes) %>% kable %>% print
+      # dTmp %>% group_by(phenotypes, hDiscr) %>% summarise(n=n_distinct(checkin), readable=(100 * sum(!is.na(diameter)) / n)) %>% mutate(tmp=factor(paste0("r", hDiscr), levels=paste0("r", levels(dTmp$hDiscr)))) %>% select(-hDiscr) %>% spread(tmp, readable) %>% kable(digits=0) %>% print
       cat('\n\n\n\n')
-
+      
+      tbl <- dTmp %>% group_by(phenotypes, hDiscr) %>% summarise(n=n_distinct(checkin), readable=round(100 * sum(!is.na(diameter)) / n)) %>% mutate(tmp=factor(paste0("r", hDiscr), levels=paste0("r", levels(dTmp$hDiscr)))) %>% select(-hDiscr) %>% spread(tmp, readable)
+      
+      cat("\\begin{center}\n")
+      cat("\n\nSample sizes and readabilities for different phenotypes.\n\n")
+      # cat("\n\n\\smallskip\n\n")
+      cat("\\begin{tabular}[c]{@{}l", paste(collapse="", rep("r", ncol(tbl) - 1)), "@{}}\n", sep="")
+      cat("\\toprule\n")
+      cat(" & & \\multicolumn{", ncol(tbl) - 2, "}{c}{readability / \\%}\\\\\n", sep="")
+      cat("\\cmidrule{3-", ncol(tbl), "}\n", sep="")
+      cat("phenotype & n &", tbl %>% ungroup() %>% select(-1, -2) %>% names %>% substring(2) %>% paste(collapse=" h & "), "h\\tabularnewline\n")
+      cat("\\midrule\n")
+      tbl %>% apply(1, function(x) {cat(sep="", paste(x, collapse="&"), "\\tabularnewline\n")})
+      cat("\\bottomrule\n")
+      cat("\\end{tabular}\n")
+      cat("\\end{center}\n")
+      cat("\n\n")
+      
       ##############
       # Masterplot #
       ##############
+      
+      dTmp <- dTmp[!is.na(dTmp$diameter), ]
 
       if (manuscript == 2) {
         if (length(allNonWt) == 0) {
-          addBoxplot(ggplot(dTmp, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE)) %>% polishPlot %>% print
-          cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}.\n\n')
-          cat('\n\n\\pagebreak\n')
-          next
+          addBoxplot(ggplot(dTmp, aes(x=hDiscr, y=diameter, fill=isWt)) + facet_wrap(~ phenotypes) + scale_fill_discrete("", drop=FALSE) + theme(aspect.ratio=1)) %>% polishPlot %>% print
+        } else {
+          p1 <- masterplot(dTmp, wt=wt, allNonWt=allNonWt)
+          p2 <- aucPlot(dTmp, manuscript=manuscript, wt=wt, allNonWt=allNonWt)
+          alignPlots(p1, p2)
         }
-        
-        masterplot(dTmp, wt=wt, allNonWt=allNonWt) %>% print
       } else if (manuscript == 3) {
-        myBoxplot(dTmp) %>% print
+        p1 <- myBoxplot(dTmp)
+        p2 <- aucPlot(dTmp, manuscript=manuscript)
+        alignPlots(p1, p2)
+        
+        # plot_grid(p1, p2, ncol=1, rel_heights=c(2, 1)) %>% print  # , labels=c("a", "b")
       }
 
       ######################
       # Caption / footnote #
       ######################
-
-      cat(sep='', '\n\n\\emph{Caption or footnote for ', paste(sep=' / ', ab, sp), ', to be written}. Boxes range from the 5th to the 95th percentiles, whiskers cover the whole range of the data, and thick lines indicate medians.\n\n')
-
-      ####################
-      # Additional plots #
-      ####################
-
-      if (showAllPlots) {
-        cat('\n\n\\pagebreak\n')
-        print(lineplotHombachMaster(dTmp))  # lineplot requested by M. Hombach and M. Jetter
-        cat('\n\n\\pagebreak\n')
-        print(lineplotWFacets(dTmp))  # simple lineplot
-
-        # More accessible figure based on boxplots:
-        bxplt <- list()
-        for (i in 1:(nlevels(dTmp$phenotypes) - 1)) {
-          nonWt <- allNonWt[i]
-          bxplt[[i]] <- myBoxplot(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ]) + ggtitle(nonWt)
-        }
-        cat('\n\n\\pagebreak\n')
-        print(do.call("plot_grid", c(bxplt)))
+      
+      if (length(allNonWt) == 0) {
+        cat(sep='', '\n\nBoxes represent diameter ranges from the 5th to the 95th percentile, whiskers represent the full range of diameters, and bold lines indicate median diameter values.\n\n')
+      } else {
+        cat(sep='', '\n\n\\textbf{(Top)} Boxes represent diameter ranges from the 5th to the 95th percentile, whiskers represent the full range of diameters, and bold lines indicate median diameter values. \\textbf{(Bottom)} The area under the receiver operating characteristic curve (AUC) quantifies how well a phenotype is separated from the wild type. An AUC of 1 indicates perfect separation while an AUC of 0.5 corresponds to complete overlap of the two populations. Error bars display 95\\% confidence intervals.\n\n')
       }
+
+      # ####################
+      # # Additional plots #
+      # ####################
+      # 
+      # if (showAllPlots) {
+      #   cat('\n\n\\pagebreak\n')
+      #   print(lineplotHombachMaster(dTmp))  # lineplot requested by M. Hombach and M. Jetter
+      #   cat('\n\n\\pagebreak\n')
+      #   print(lineplotWFacets(dTmp))  # simple lineplot
+      # 
+      #   # More accessible figure based on boxplots:
+      #   bxplt <- list()
+      #   for (i in 1:(nlevels(dTmp$phenotypes) - 1)) {
+      #     nonWt <- allNonWt[i]
+      #     bxplt[[i]] <- myBoxplot(dTmp[dTmp$phenotypes %in% c(wt, nonWt), ]) + ggtitle(nonWt)
+      #   }
+      #   cat('\n\n\\pagebreak\n')
+      #   print(do.call("plot_grid", c(bxplt)))
+      # }
 
       cat('\n\n\\pagebreak\n')
     }
@@ -248,7 +338,7 @@ masterLoop <- function(manuscript) {
 ##########
 
 tab2 <- function() {
-  cutoff <- 1  # adjust manually in figure legend below!!
+  cutoff <- 2  # adjust manually in figure legend below!!
   discrDeltaDiam <- function(d) {
     factor(ifelse(d < -cutoff, 1, ifelse(d > cutoff, 3, 2)), levels=1:3)
   }
@@ -257,17 +347,17 @@ tab2 <- function() {
     group_by(organism, antibiotic, h) %>% summarise(q05Diam=quantile(diameter, 0.05)) %>%
     mutate(deltaDiam=(q05Diam[h == 18] - q05Diam[h == 6])) %>% mutate(deltaDiscr=discrDeltaDiam(deltaDiam))
   
-  print(ggplot(dTab2, aes(x=h, y=q05Diam, colour=deltaDiscr)) +
+  ggplot(dTab2, aes(x=h, y=q05Diam, colour=deltaDiscr)) +
           geom_line() + geom_point() +
           facet_grid(antibiotic ~ organism) +
           theme(strip.text.y=element_text(angle=0), legend.position="top") +
           scale_x_continuous(breaks=c(6, 8, 12, 18)) + scale_y_continuous(breaks=pretty_breaks(n=3)) +
           xlab("time / h") + ylab("5th percentile of diameter for wild-type strains / mm") +
-          scale_colour_manual(name=expression(Delta==d[18*h]-d[6*h]), values=c("orangered3", "skyblue4", "orange"),
-                              labels=c(expression("decrease "*(Delta < -1*mm)),
-                                       expression("stable "*(-1*mm<=paste(Delta<=1*mm))),
-                                       expression("increase "*(Delta>1*mm))), drop=FALSE))
+          scale_colour_manual(name=expression(Delta==d[18*h]-d[6*h]), values=c("orangered3", brewer.pal(3, 'Set1')[3], "orange"),
+                              labels=c(expression("decrease "*(Delta < -2*mm)),
+                                       expression("stable "*(-2*mm<=paste(Delta<=2*mm))),
+                                       expression("increase "*(Delta>2*mm))), drop=FALSE)  # "skyblue4"
   
-  dTab2 %>% select(organism, antibiotic, deltaDiscr) %>% unique %>% spread(organism, deltaDiscr) %>% write.table("tab2.csv", sep=";", row.names=FALSE)
   ggsave(paste(sep="", "Figs/fig3.png"), width=18, height=22, units="cm", dpi=1200, limitsize=TRUE)
+  dTab2 %>% select(organism, antibiotic, deltaDiscr) %>% unique %>% spread(organism, deltaDiscr) %>% write.table("tab2.csv", sep=";", row.names=FALSE)
 }
